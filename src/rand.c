@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#if defined(MSSL_TARGET_MINIMALOS)
+#if defined(MSSL_TARGET_MINIMALOS) || defined(MINIMALOS_TARGET)
   #include "stdlib.h"          /* SDK header: mos_random_bytes() */
 
   static int fill(unsigned char* buf, size_t n) {
