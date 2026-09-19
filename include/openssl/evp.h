@@ -1,6 +1,9 @@
 #ifndef MINIMASSL_EVP_H
 #define MINIMASSL_EVP_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

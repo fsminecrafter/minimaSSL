@@ -1,5 +1,4 @@
 #include <openssl/evp.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include "mssl_core.h"

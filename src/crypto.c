@@ -164,13 +164,6 @@ static const uint8_t SBOX[256] = {
     0x8c,0xa1,0x89,0x0d,0xbf,0xe6,0x42,0x68,0x41,0x99,0x2d,0x0f,0xb0,0x54,0xbb,0x16
 };
 
-#define AES256_ROUNDS 14
-#define AES256_RK_WORDS (4 * (AES256_ROUNDS + 1))   /* 60 */
-
-typedef struct {
-    uint32_t rk[AES256_RK_WORDS];
-} aes256_key_t;
-
 static uint32_t sub_word(uint32_t w) {
     return ((uint32_t)SBOX[(w >> 24) & 0xFF] << 24) |
            ((uint32_t)SBOX[(w >> 16) & 0xFF] << 16) |
@@ -180,7 +173,7 @@ static uint32_t sub_word(uint32_t w) {
 
 static uint32_t rot_word(uint32_t w) { return (w << 8) | (w >> 24); }
 
-static void aes256_expand_key(const uint8_t key[32], aes256_key_t* out) {
+void aes256_expand_key(const uint8_t key[32], aes256_key_t* out) {
     static const uint8_t RCON[7] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40 };
 
     for (int i = 0; i < 8; i++) {
@@ -212,7 +205,7 @@ static void add_round_key(uint8_t state[16], const uint32_t* rk) {
     }
 }
 
-static void aes256_encrypt_block(const aes256_key_t* key,
+void aes256_encrypt_block(const aes256_key_t* key,
                                  const uint8_t in[16], uint8_t out[16]) {
     uint8_t s[16];
     memcpy(s, in, 16);
@@ -258,17 +251,13 @@ static void aes256_encrypt_block(const aes256_key_t* key,
  * on an emulated CPU.
  * ========================================================================== */
 
-typedef struct {
-    uint8_t table[16][16];   // table[i] = H * i in the GCM bit ordering
-} ghash_key_t;
-
 // Right shift the 128-bit big-endian block by one bit.
 static void block_rshift1(uint8_t b[16]) {
     for (int i = 15; i > 0; i--) b[i] = (uint8_t)((b[i] >> 1) | ((b[i - 1] & 1) << 7));
     b[0] >>= 1;
 }
 
-static void ghash_init(ghash_key_t* gk, const uint8_t h[16]) {
+void ghash_init(ghash_key_t* gk, const uint8_t h[16]) {
     memset(gk->table[0], 0, 16);
     memcpy(gk->table[8], h, 16);
 
@@ -294,7 +283,7 @@ static void ghash_init(ghash_key_t* gk, const uint8_t h[16]) {
 }
 
 // x = x * H
-static void ghash_mul(const ghash_key_t* gk, uint8_t x[16]) {
+void ghash_mul(const ghash_key_t* gk, uint8_t x[16]) {
     // Reduction values for the 4-bit shift, indexed by the nibble
     // shifted out of the low end.
     static const uint16_t RED[16] = {

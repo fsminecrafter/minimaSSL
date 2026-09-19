@@ -1,20 +1,36 @@
 #include <openssl/rand.h>
 #include <stddef.h>
 
-#ifdef MINIMASSL_HOST
-#include <stdio.h>
-static int fill(void* buf, size_t n) {
-    FILE* f = fopen("/dev/urandom", "rb");
-    if (!f) return 0;
-    size_t got = fread(buf, 1, n, f);
-    fclose(f);
-    return got == n;
-}
+#include <stddef.h>
+
+#if defined(MSSL_TARGET_MINIMALOS)
+  #include "stdlib.h"          /* SDK header: mos_random_bytes() */
+
+  static int fill(unsigned char* buf, size_t n) {
+      return mos_random_bytes(buf, n) == (long)n;   /* short count == failure */
+  }
 #else
-#include <stdlib.h>      /* SDK stdlib.h: mos_random_bytes() over SYS_RANDOM */
-static int fill(void* buf, size_t n) {
-    return mos_random_bytes(buf, n) == (long)n;   /* short count == failure */
-}
+  #include <stdio.h>
+  #if defined(__linux__)
+    #include <sys/random.h>
+  #endif
+
+  static int fill(unsigned char* buf, size_t n) {
+  #if defined(__linux__)
+      size_t got = 0;
+      while (got < n) {
+          ssize_t r = getrandom(buf + got, n - got, 0);
+          if (r <= 0) break;                         /* fall back below */
+          got += (size_t)r;
+      }
+      if (got == n) return 1;
+  #endif
+      FILE* f = fopen("/dev/urandom", "rb");
+      if (!f) return 0;
+      size_t r = fread(buf, 1, n, f);
+      fclose(f);
+      return r == n;
+  }
 #endif
 
 int RAND_bytes(unsigned char* buf, int num) {

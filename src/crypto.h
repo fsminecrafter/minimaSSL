@@ -68,4 +68,27 @@ size_t dlr_b64_encode(const uint8_t* data, size_t len, char* out, size_t out_siz
 // Returns the number of bytes decoded, or -1 if out_size is too small.
 long dlr_b64_decode(const char* text, uint8_t* out, size_t out_size);
 
+
+// ---------------------------------------------------------------------------
+// Low-level primitives (exported for the EVP shim's incremental GCM)
+// ---------------------------------------------------------------------------
+
+#define AES256_ROUNDS   14
+#define AES256_RK_WORDS (4 * (AES256_ROUNDS + 1))   /* 60 */
+
+typedef struct {
+    uint32_t rk[AES256_RK_WORDS];
+} aes256_key_t;
+
+typedef struct {
+    uint8_t table[16][16];   /* table[i] = H * i in GCM bit ordering */
+} ghash_key_t;
+
+void aes256_expand_key(const uint8_t key[32], aes256_key_t* out);
+void aes256_encrypt_block(const aes256_key_t* key,
+                          const uint8_t in[16], uint8_t out[16]);
+void ghash_init(ghash_key_t* gk, const uint8_t h[16]);
+void ghash_mul(const ghash_key_t* gk, uint8_t x[16]);   /* x = x * H */
+
+
 #endif // DLR_CRYPTO_H
